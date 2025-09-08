@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mudacity
 
-## Getting Started
+Bem-vindo ao app Mudacity.
 
-First, run the development server:
+## Requisitos
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Para instalar o app é necessário verificar alguns requisitos antes.
+
+01. Verifique se seu computador possuí o `Git` instalado.
+Abra o `terminal` e digite:
+```
+git -v
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Caso nao esteja instalado, acesso o link: https://git-scm.com/downloads
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+02. Verifique se seu computador possuí o `Node` instalado.
+Abra o `terminal` e digite:
+```
+node -v
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Caso nao esteja instalado, acesso o link: https://nodejs.org/en/download/
 
-## Learn More
+03. Caso nao tenha, instale o editor de código `VSCODE` da Microsoft. https://code.visualstudio.com/download
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Instalacao
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+01. Clone o repositório em seu computador local.
 
-## Deploy on Vercel
+02. Agora, é necessário instalar as dependencias do projeto. Para isso, vá até a pasta onde o projeto foi clonado e digite o seguinte comando no terminal.
+```
+npm install
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Rodando a aplicacao
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+01. Com as dependencias instaladas, agora é necessário rodar a aplicacao.
+Abra o `terminal` e digite:
+```
+npm run dev
+```
+
+02. Abra o seu navegador no URL indicado no terminal. Ex. localhost:3000
