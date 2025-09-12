@@ -29,7 +29,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col mt-8 md:max-w-[50%]">
             <div className="flex-4">
-              <div className="flex items-center flex-row gap-4 mt-8">
+              <div className="flex items-center flex-row gap-4 mt-2">
                 <span>Já possuí uma conta?</span>
                 <Drawer direction="bottom" open={loginOpen} onOpenChange={(o) => { console.log('drawer open change:', o); setLoginOpen(o); }}>
                   <DrawerTrigger asChild>
@@ -71,8 +71,8 @@ export default function Home() {
                   </DrawerContent>
                 </Drawer>
               </div>
-              <hr className="my-8 border-t border-gray-300" />
-              <div className="flex items-center flex-row gap-4 mt-8">
+              <hr className="my-4 border-t border-gray-300" />
+              <div className="flex items-center flex-row gap-4 mt-2">
                 <span>Caso contrário</span>
                 <Drawer direction="bottom" open={registerOpen} onOpenChange={(o) => { console.log('register drawer open change:', o); setRegisterOpen(o); }}>
                   <DrawerTrigger asChild>
