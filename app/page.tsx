@@ -1,12 +1,14 @@
 "use client";
-import Image from "next/image";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function Home() {
+  const router = useRouter();
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   return (
@@ -51,7 +53,17 @@ export default function Home() {
                       </div>
                     </div>
                     <DrawerFooter>
-                      <Button type="submit" className="w-full">Entrar</Button>
+                      <Button
+                        data-test-id="login-submit-button"
+                        type="button"
+                        className="w-full"
+                        onClick={() => {
+                          setLoginOpen(false);
+                          router.push('/pesquisa');
+                        }}
+                      >
+                        Entrar
+                      </Button>
                       <DrawerClose asChild>
                         <Button variant="ghost" className="w-full">Cancelar</Button>
                       </DrawerClose>
