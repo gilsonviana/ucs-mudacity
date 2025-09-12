@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import LoadingOverlay from "@/components/ui/loading-overlay";
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,15 @@ export default function Home() {
   const router = useRouter();
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount to avoid navigation after component disposal
+  useEffect(() => {
+    return () => {
+      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
+    };
+  }, []);
   return (
     <div
       className="relative min-h-screen w-full bg-contain bg-bottom md:bg-cover md:bg-center bg-no-repeat"
@@ -57,12 +67,18 @@ export default function Home() {
                         data-test-id="login-submit-button"
                         type="button"
                         className="w-full"
+                        disabled={isAuthenticating}
                         onClick={() => {
-                          setLoginOpen(false);
-                          router.push('/pesquisa');
+                          if (isAuthenticating) return; // guard multiple clicks
+                          setIsAuthenticating(true);
+                          setLoginOpen(false); // dismiss drawer immediately
+                          // Debounce / simulate auth delay (1000ms)
+                          authTimeoutRef.current = setTimeout(() => {
+                            router.push('/pesquisa');
+                          }, 2000);
                         }}
                       >
-                        Entrar
+                        {isAuthenticating ? 'Autenticando...' : 'Entrar'}
                       </Button>
                       <DrawerClose asChild>
                         <Button variant="ghost" className="w-full">Cancelar</Button>
@@ -113,6 +129,12 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <LoadingOverlay
+        open={isAuthenticating}
+        message="Validando suas credenciais..."
+        testId="auth-loading-overlay"
+        spinnerSize={48}
+      />
     </div>
   );
 }

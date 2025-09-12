@@ -1,15 +1,24 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/header";
 import EstadoSearch, { type EstadoItem } from "@/components/estado-search";
+import LoadingOverlay from "@/components/ui/loading-overlay";
 
 export default function Pesquisa() {
   const [estadoTexto, setEstadoTexto] = useState("");
   const [selectedEstado, setSelectedEstado] = useState<EstadoItem | null>(null);
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,6 +30,7 @@ export default function Pesquisa() {
     <>
       <main className="flex-1 flex flex-col  md:justify-center items-center px-6 py-12">
         <div className="w-full max-w-xl">
+          <h1 className="text-4xl md:text-6xl font-bold mt-8 drop-shadow-sm mb-4">01. Estado</h1>
           <p className="text-lg leading-relaxed text-center">
             Vamos começar. Nos informe o nome do estado que está procurando.
           </p>
@@ -46,14 +56,22 @@ export default function Pesquisa() {
           disabled={!selectedEstado}
           type="button"
           onClick={() => {
-            if (!selectedEstado) return;
-            // Navigate to detalhes dynamic route using UF segment
-            router.push(`/pesquisa/detalhes/${selectedEstado.uf}`);
+            if (!selectedEstado || loading) return;
+            setLoading(true);
+            timeoutRef.current = setTimeout(() => {
+              router.push(`/pesquisa/detalhes/${selectedEstado.uf}`);
+            }, 2000);
           }}
         >
           Avançar
         </Button>
       </footer>
+      <LoadingOverlay
+        open={loading}
+        message="Carregando dados do Estado..."
+        testId="pesquisa-loading-overlay"
+        spinnerSize={44}
+      />
     </>
   );
 }
