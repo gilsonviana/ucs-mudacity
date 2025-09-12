@@ -7,7 +7,7 @@ interface DetalhesProps {
 }
 
 export default function DetalhesPage({ params }: DetalhesProps) {
-  const ufParam = (params.uf || "").toUpperCase();
+  const ufParam = (params?.uf || "").toUpperCase();
   const estado = ESTADOS.find((e) => e.uf === ufParam);
   if (!estado) notFound();
   return <DetalhesContent estadoUF={estado.uf} />;
