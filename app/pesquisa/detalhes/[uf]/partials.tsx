@@ -12,12 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import CompararEstados from "@/components/comparar-estados";
 import { ESTADOS } from "@/lib/estados";
+import { MOCK_INDICADORES_CONFIG } from "@/lib/mock-indicadores";
 
 export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
   const estado = ESTADOS.find((e) => e.uf === estadoUF)!;
   const [compararEstado, setCompararEstado] = useState<{ uf: string; nome: string } | null>(null);
 
-  const categorias = ["Alimentacao", "Saúde", "Transporte"] as const;
+  // Consumindo categorias a partir do mock (simulando resposta de API)
+  const categorias = MOCK_INDICADORES_CONFIG.categorias;
 
   function computeMetric(uf: string, categoria: string) {
     const seed = uf.split("").reduce((a, c) => a + c.charCodeAt(0), 0) + categoria.length * 13;
@@ -28,10 +30,12 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
 
   const indicadores = useMemo(() => {
     return categorias.map((categoria) => {
-      const nacional = computeMetric("BR", categoria);
-      const base = computeMetric(estado.uf, categoria);
-      const comparado = compararEstado ? computeMetric(compararEstado.uf, categoria) : null;
-      return { categoria, nacional, base, comparado };
+      const nacional = computeMetric("BR", categoria.id);
+      const base = computeMetric(estado.uf, categoria.id);
+      const comparado = compararEstado
+        ? computeMetric(compararEstado.uf, categoria.id)
+        : null;
+      return { categoria: categoria.label, nacional, base, comparado };
     });
   }, [categorias, estado.uf, compararEstado]);
 
@@ -48,51 +52,41 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
         <Table className="border border-gray-200">
           <TableHeader className="bg-gray-50">
             <TableRow>
-              <TableHead className="w-64 align-bottom" rowSpan={2}>Categoria</TableHead>
-              {compararEstado && (
-                <TableHead className="text-center font-semibold" colSpan={2}>
-                  {expandEstadoUF(compararEstado.uf)}, {compararEstado.uf}
-                </TableHead>
-              )}
-              <TableHead className="text-center font-semibold" colSpan={compararEstado ? 1 : 2}>
+              <TableHead className="w-64">Categoria</TableHead>
+              {/* Índice Nacional sempre primeiro */}
+              <TableHead className="w-32 text-center">{MOCK_INDICADORES_CONFIG.colunas.base.indice}</TableHead>
+              {/* Cada estado apenas possui sua coluna de Média (R$) */}
+              <TableHead className="w-40 text-center font-semibold">
                 {expandEstadoUF(estado.uf)}, {estado.uf}
               </TableHead>
-            </TableRow>
-            <TableRow>
               {compararEstado && (
-                <>
-                  <TableHead className="w-40">Índice Nacional</TableHead>
-                  <TableHead className="w-40">Média (R$)</TableHead>
-                </>
-              )}
-              <TableHead className="w-40">Média (R$)</TableHead>
-              {!compararEstado && (
-                <TableHead className="w-40">Índice Nacional</TableHead>
+                <TableHead className="w-40 text-center font-semibold">
+                  {expandEstadoUF(compararEstado.uf)}, {compararEstado.uf}
+                </TableHead>
               )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {indicadores.map((row) => {
+              const nacionalIndice = row.nacional.indice.toFixed(2);
               const baseMedia = formatCurrency(row.base.media);
-              const baseIndice = row.base.indice.toFixed(2);
               const compMedia = row.comparado ? formatCurrency(row.comparado.media) : null;
-              const compIndice = row.comparado ? row.comparado.indice.toFixed(2) : null;
               return (
                 <TableRow key={row.categoria}>
                   <TableCell className="font-semibold">{row.categoria}</TableCell>
-                  {compararEstado && (
-                    <>
-                      <TableCell>{compIndice}</TableCell>
-                      <TableCell>{compMedia}</TableCell>
-                    </>
-                  )}
-                  <TableCell>{baseMedia}</TableCell>
-                  {!compararEstado && <TableCell>{baseIndice}</TableCell>}
+                  {/* Índice Nacional */}
+                  <TableCell className="text-center">{nacionalIndice}</TableCell>
+                  {/* Média do estado base */}
+                  <TableCell className="text-center">{baseMedia}</TableCell>
+                  {/* Média do estado comparado (quando houver) */}
+                  {compararEstado && <TableCell className="text-center">{compMedia}</TableCell>}
                 </TableRow>
               );
             })}
           </TableBody>
-          <TableCaption className="text-left">* Valores mensais estimados (dados simulados).</TableCaption>
+          <TableCaption className="text-left">
+            {MOCK_INDICADORES_CONFIG.colunas.caption}
+          </TableCaption>
         </Table>
       </section>
 
