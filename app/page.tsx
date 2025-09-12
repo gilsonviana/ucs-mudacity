@@ -3,20 +3,19 @@ import Image from "next/image";
 export default function Home() {
   return (
     <div
-      className="relative min-h-screen w-full bg-cover bg-center bg-no-repeat"
+      className="relative min-h-screen w-full bg-contain bg-bottom md:bg-cover md:bg-center bg-no-repeat"
       style={{
         backgroundImage: 'url(/city-bg.png)',
-        backgroundPosition: 'bottom center'
       }}
     >
-      <main className="font-sans flex flex-col min-h-screen items-center p-20 md:p-8 pb-20">
-        <div className="mt-12 max-w-4xl w-full">
-          <h1 className="text-6xl font-bold mt-8 drop-shadow-sm">Mudacity.</h1>
-          <p className="text-lg mt-4 leading-relaxed">
+      <main className="font-sans flex flex-col min-h-screen md:items-center p-8 md:p-20 pb-20">
+        <div className="md:mt-12 md:max-w-4xl w-full">
+          <h1 className="text-4xl md:text-6xl font-bold mt-8 drop-shadow-sm">Mudacity.</h1>
+          <p className="md:text-lg mt-4 leading-relaxed">
             Encontre os dados que importam para basear na decisão de mudar para
             um novo Estado.
           </p>
-          <div className="flex flex-row mt-8">
+          <div className="flex flex-col mt-8 md:max-w-[50%]">
             <div className="flex-4">
               <div className="flex items-center flex-row gap-4 mt-8">
                 <span>Já possuí uma conta?</span>
