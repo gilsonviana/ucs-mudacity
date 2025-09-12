@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import CompararEstados from "@/components/comparar-estados";
 import { ESTADOS } from "@/lib/estados";
 import { MOCK_INDICADORES_CONFIG } from "@/lib/mock-indicadores";
+import { toast } from "sonner";
 
 export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
   const estado = ESTADOS.find((e) => e.uf === estadoUF)!;
@@ -105,7 +106,16 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
 
       {!compararEstado && (
         <div className="fixed top-20 right-8">
-          <Button>Adicionar favorito</Button>
+          <Button
+            data-test-id="adicionar-favorito-button"
+            onClick={() => {
+              toast.success(`${estado.nome} adicionado aos favoritos`, {
+                description: "Você poderá gerenciar seus favoritos em breve.",
+              });
+            }}
+          >
+            Adicionar favorito
+          </Button>
         </div>
       )}
     </main>
