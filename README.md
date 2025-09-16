@@ -1,5 +1,4 @@
 # Mudacity
-
 Bem-vindo ao app Mudacity.
 
 ## Requisitos
