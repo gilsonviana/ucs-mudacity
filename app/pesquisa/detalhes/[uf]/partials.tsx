@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,9 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import CompararEstados from "@/components/comparar-estados";
 import { ESTADOS } from "@/lib/estados";
-import { MOCK_INDICADORES_CONFIG } from "@/lib/mock-indicadores";
 import { useFavoritos } from "@/lib/favoritos";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
   const estado = ESTADOS.find((e) => e.uf === estadoUF)!;
@@ -23,34 +23,89 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
     nome: string;
   } | null>(null);
 
-  // Consumindo categorias a partir do mock (simulando resposta de API)
-  const categorias = MOCK_INDICADORES_CONFIG.categorias;
-
-  function computeMetric(uf: string, categoria: string) {
-    const seed =
-      uf.split("").reduce((a, c) => a + c.charCodeAt(0), 0) +
-      categoria.length * 13;
-    const indice = (seed % 100) / 100;
-    const media = 200 + (seed % 500);
-    return { indice, media };
+  interface ApiCategoriaBase {
+    id: string;
+    label: string;
+    descricao?: string;
+    nacional: { media: number; indice: number };
+    estado: { media: number | null; indice: number | null };
   }
+  const [apiCategorias, setApiCategorias] = useState<ApiCategoriaBase[]>([]);
+  const [apiCategoriasComparado, setApiCategoriasComparado] = useState<ApiCategoriaBase[] | null>(null);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
-  const indicadores = useMemo(() => {
-    return categorias.map((categoria) => {
-      const nacional = computeMetric("BR", categoria.id);
-      const base = computeMetric(estado.uf, categoria.id);
-      const comparado = compararEstado
-        ? computeMetric(compararEstado.uf, categoria.id)
-        : null;
-      return { categoria: categoria.label, nacional, base, comparado };
-    });
-  }, [categorias, estado.uf, compararEstado]);
+  // Load base UF indicadores
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setApiLoading(true);
+      setApiError(null);
+      try {
+        const res = await fetch(`/api/indicadores/${estado.uf}`);
+        if (!res.ok) throw new Error("Falha ao carregar indicadores");
+        const json = await res.json();
+        if (active) setApiCategorias(json.categorias || []);
+      } catch (e: any) {
+        if (active) setApiError(e.message || "Erro desconhecido");
+      } finally {
+        if (active) setApiLoading(false);
+      }
+    }
+    load();
+    return () => {
+      active = false;
+    };
+  }, [estado.uf]);
+
+  // Load comparison UF indicadores when selected
+  useEffect(() => {
+    if (!compararEstado) {
+      setApiCategoriasComparado(null);
+      setCompareError(null);
+      return;
+    }
+    let active = true;
+    async function loadCompare() {
+      if (!compararEstado) return; // guard for TS
+      const uf = compararEstado.uf;
+      setCompareLoading(true);
+      setCompareError(null);
+      try {
+        const res = await fetch(`/api/indicadores/${uf}`);
+        if (!res.ok) throw new Error('Falha ao carregar indicadores do comparado');
+        const json = await res.json();
+        if (active) setApiCategoriasComparado(json.categorias || []);
+      } catch (e: any) {
+        if (active) setCompareError(e.message || 'Erro desconhecido');
+      } finally {
+        if (active) setCompareLoading(false);
+      }
+    }
+    loadCompare();
+    return () => { active = false; };
+  }, [compararEstado]);
+
+  const router = useRouter();
+  const indicadores = useMemo(() => apiCategorias, [apiCategorias]);
+  const indicadoresComparado = useMemo(() => apiCategoriasComparado, [apiCategoriasComparado]);
 
   const { favoritos, add, remove, loading: favLoading } = useFavoritos();
-  const isFavorito = favoritos.some(f => f.uf === estado.uf);
+  const isFavorito = favoritos.some((f) => f.uf === estado.uf);
 
   return (
     <main className="flex-1 px-8 py-12 space-y-10">
+      <Button
+        variant="ghost"
+        className="mb-2 flex items-center gap-2"
+        onClick={() => router.back()}
+        data-test-id="favoritos-back-button"
+      >
+        <span className="material-symbols-outlined text-base">←</span>
+        Voltar
+      </Button>
       <header className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <h1 className="order-2 md:order-1 text-3xl font-semibold tracking-tight">
@@ -60,7 +115,7 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
             <div className="order-1 md:order-2 mb-2 md:mb-0">
               <Button
                 data-test-id="adicionar-favorito-button"
-                variant={isFavorito ? 'outline' : 'default'}
+                variant={isFavorito ? "outline" : "default"}
                 disabled={favLoading}
                 onClick={async () => {
                   if (isFavorito) {
@@ -68,19 +123,21 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
                     if (result.ok) {
                       toast.success(`${estado.nome} removido dos favoritos`);
                     } else {
-                      toast.error(result.error || 'Falha ao remover favorito');
+                      toast.error(result.error || "Falha ao remover favorito");
                     }
                   } else {
                     const result = await add(estado.uf);
                     if (result.ok) {
                       toast.success(`${estado.nome} adicionado aos favoritos`);
                     } else {
-                      toast.error(result.error || 'Falha ao adicionar favorito');
+                      toast.error(
+                        result.error || "Falha ao adicionar favorito"
+                      );
                     }
                   }
                 }}
               >
-                {isFavorito ? 'Remover favorito' : 'Adicionar favorito'}
+                {isFavorito ? "Remover favorito" : "Adicionar favorito"}
               </Button>
             </div>
           )}
@@ -98,47 +155,68 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
               <TableHead className="w-64">Categoria</TableHead>
               {/* Índice Nacional sempre primeiro */}
               <TableHead className="w-32 text-center">
-                {MOCK_INDICADORES_CONFIG.colunas.base.indice}
+                Índice Nacional
               </TableHead>
               {/* Cada estado apenas possui sua coluna de Média (R$) */}
               <TableHead className="w-40 text-center font-semibold">
                 {expandEstadoUF(estado.uf)}, {estado.uf}
               </TableHead>
               {compararEstado && (
-                <TableHead className="w-40 text-center font-semibold">
-                  {expandEstadoUF(compararEstado.uf)}, {compararEstado.uf}
-                </TableHead>
+                <>
+                  <TableHead className="w-40 text-center font-semibold">
+                    {expandEstadoUF(compararEstado.uf)}, {compararEstado.uf}
+                  </TableHead>
+                </>
               )}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {indicadores.map((row) => {
-              const nacionalIndice = row.nacional.indice.toFixed(2);
-              const baseMedia = formatCurrency(row.base.media);
-              const compMedia = row.comparado
-                ? formatCurrency(row.comparado.media)
-                : null;
+            {apiLoading && (
+              <TableRow>
+                <TableCell
+                  colSpan={compararEstado ? 4 : 3}
+                  className="text-center text-sm text-muted-foreground"
+                >
+                  Carregando...
+                </TableCell>
+              </TableRow>
+            )}
+            {apiError && !apiLoading && (
+              <TableRow>
+                <TableCell
+                  colSpan={compararEstado ? 4 : 3}
+                  className="text-center text-sm text-destructive"
+                >
+                  {apiError}
+                </TableCell>
+              </TableRow>
+            )}
+            {!apiLoading && !apiError && indicadores.map((cat) => {
+              const nacionalIndice = cat.nacional.indice.toFixed(2);
+              const mediaEstado = cat.estado.media != null ? formatCurrency(cat.estado.media) : '—';
+              let mediaComparado: React.ReactNode = null;
+              if (compararEstado) {
+                if (compareLoading) mediaComparado = <span className="text-muted-foreground">...</span>;
+                else if (compareError) mediaComparado = <span className="text-destructive">ERR</span>;
+                else if (indicadoresComparado) {
+                  const match = indicadoresComparado.find(c => c.id === cat.id);
+                  mediaComparado = match && match.estado.media != null ? formatCurrency(match.estado.media) : '—';
+                } else mediaComparado = '—';
+              }
               return (
-                <TableRow key={row.categoria}>
-                  <TableCell className="font-semibold">
-                    {row.categoria}
-                  </TableCell>
-                  {/* Índice Nacional */}
-                  <TableCell className="text-center">
-                    {nacionalIndice}
-                  </TableCell>
-                  {/* Média do estado base */}
-                  <TableCell className="text-center">{baseMedia}</TableCell>
-                  {/* Média do estado comparado (quando houver) */}
+                <TableRow key={cat.id}>
+                  <TableCell className="font-semibold">{cat.label}</TableCell>
+                  <TableCell className="text-center">{nacionalIndice}</TableCell>
+                  <TableCell className="text-center">{mediaEstado}</TableCell>
                   {compararEstado && (
-                    <TableCell className="text-center">{compMedia}</TableCell>
+                    <TableCell className="text-center">{mediaComparado}</TableCell>
                   )}
                 </TableRow>
               );
             })}
           </TableBody>
           <TableCaption className="text-left">
-            {MOCK_INDICADORES_CONFIG.colunas.caption}
+            * Valores mensais estimados (dados reais do banco).
           </TableCaption>
         </Table>
       </section>

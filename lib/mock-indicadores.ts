@@ -26,7 +26,7 @@ export const MOCK_INDICADORES_CONFIG: IndicadoresConfigResponse = {
   categorias: [
     { id: "alimentacao", label: "Alimentação", descricao: "Custos médios com alimentação" },
     { id: "saude", label: "Saúde", descricao: "Indicadores relativos a saúde" },
-    { id: "transporte", label: "Transporte", descricao: "Custos e índice de transporte" },
+    { id: "aluguel", label: "Aluguél", descricao: "Custos e índice de aluguél" },
   ],
   colunas: {
     base: { media: "Média (R$)", indice: "Índice Nacional" },

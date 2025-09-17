@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, SESSION_COOKIE } from '@/lib/auth/session';
 import { getAdminClient } from '@/app/utils/supabase/admin';
 
-export const runtime = 'nodejs'; // bcrypt/session still node for now
+export const runtime = 'nodejs';
 
-// GET: list favorites
-// POST: add favorite { uf, nome }
-// DELETE: remove all favorites
 export async function GET(req: NextRequest) {
   const session = await verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
