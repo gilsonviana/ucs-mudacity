@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: 'Erro ao buscar favoritos' }, { status: 500 });
   const res = NextResponse.json({ items: data });
-  // User-specific data: mark private; allow revalidation after 24h but encourage client re-fetch after mutations
   res.headers.set('Cache-Control', 'private, max-age=60, s-maxage=0');
   return res;
 }
@@ -30,7 +29,6 @@ export async function POST(req: NextRequest) {
   const cleanedUf = uf.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(cleanedUf)) return NextResponse.json({ error: 'UF inválida' }, { status: 400 });
   const client = getAdminClient();
-  // Check existing
   const { data: existing } = await client
     .from('Favoritos')
     .select('uf')
@@ -44,7 +42,6 @@ export async function POST(req: NextRequest) {
     .select('uf,nome,created_at')
     .single();
   if (insertError) return NextResponse.json({ error: 'Erro ao inserir' }, { status: 500 });
-  // Do not cache mutations
   const res = NextResponse.json({ item: data }, { status: 201 });
   res.headers.set('Cache-Control', 'no-store');
   return res;

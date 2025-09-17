@@ -37,7 +37,6 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
 
-  // Load base UF indicadores
   useEffect(() => {
     let active = true;
     async function load() {
@@ -60,7 +59,6 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
     };
   }, [estado.uf]);
 
-  // Load comparison UF indicadores when selected
   useEffect(() => {
     if (!compararEstado) {
       setApiCategoriasComparado(null);
@@ -153,11 +151,9 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
           <TableHeader className="bg-gray-50">
             <TableRow>
               <TableHead className="w-64">Categoria</TableHead>
-              {/* Índice Nacional sempre primeiro */}
               <TableHead className="w-32 text-center">
                 Índice Nacional
               </TableHead>
-              {/* Cada estado apenas possui sua coluna de Média (R$) */}
               <TableHead className="w-40 text-center font-semibold">
                 {expandEstadoUF(estado.uf)}, {estado.uf}
               </TableHead>
@@ -205,7 +201,6 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
                 else if (indicadoresComparado) {
                   const match = indicadoresComparado.find(c => c.id === cat.id);
                   mediaComparado = match && match.estado.media != null ? formatCurrency(match.estado.media) : '—';
-                  // Compute delta if both medias available
                   if (match && match.estado.media != null && cat.estado.media != null) {
                     const base = cat.estado.media;
                     const comp = match.estado.media;
@@ -213,7 +208,7 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
                       const delta = ((comp - base) / base) * 100;
                       const rounded = delta.toFixed(1);
                       const positive = delta > 0;
-                      const zero = Math.abs(delta) < 0.05; // treat as ~0
+                      const zero = Math.abs(delta) < 0.05;
                       variacaoNode = (
                         <span className={
                           zero

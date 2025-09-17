@@ -7,8 +7,8 @@ interface CategoriaResult {
   id: string;
   label: string;
   descricao?: string;
-  nacional: { media: number; indice: number }; // indice nacional = 1.0
-  estado: { media: number | null; indice: number | null }; // null when UF not found
+  nacional: { media: number; indice: number };
+  estado: { media: number | null; indice: number | null };
 }
 
 const CATEGORIAS: Array<{ id: string; label: string; descricao: string; table: string }> = [
@@ -41,7 +41,6 @@ export async function GET(_req: NextRequest, { params }: { params: { uf: string 
       });
       continue;
     }
-    // Normalize alimentação monthly: divide by 12 if table is CustoAlimentacao
     const normalized = data.map((row: any) => {
       let custo = row.custo ?? 0;
       if (cat.table === 'CustoAlimentacao' && typeof custo === 'number') {
@@ -74,7 +73,6 @@ export async function GET(_req: NextRequest, { params }: { params: { uf: string 
       caption: '* Valores mensais estimados (dados reais simulados a partir do banco).',
     },
   });
-  // Cache indicadores per UF for 24h at the edge/CDN; allow background revalidation
   res.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=3600');
   return res;
 }
