@@ -166,6 +166,9 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
                   <TableHead className="w-40 text-center font-semibold">
                     {expandEstadoUF(compararEstado.uf)}, {compararEstado.uf}
                   </TableHead>
+                  <TableHead className="w-32 text-center font-semibold">
+                    Variação %
+                  </TableHead>
                 </>
               )}
             </TableRow>
@@ -174,7 +177,7 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
             {apiLoading && (
               <TableRow>
                 <TableCell
-                  colSpan={compararEstado ? 4 : 3}
+                  colSpan={compararEstado ? 5 : 3}
                   className="text-center text-sm text-muted-foreground"
                 >
                   Carregando...
@@ -184,7 +187,7 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
             {apiError && !apiLoading && (
               <TableRow>
                 <TableCell
-                  colSpan={compararEstado ? 4 : 3}
+                  colSpan={compararEstado ? 5 : 3}
                   className="text-center text-sm text-destructive"
                 >
                   {apiError}
@@ -195,12 +198,41 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
               const nacionalIndice = cat.nacional.indice.toFixed(2);
               const mediaEstado = cat.estado.media != null ? formatCurrency(cat.estado.media) : '—';
               let mediaComparado: React.ReactNode = null;
+              let variacaoNode: React.ReactNode = null;
               if (compararEstado) {
                 if (compareLoading) mediaComparado = <span className="text-muted-foreground">...</span>;
                 else if (compareError) mediaComparado = <span className="text-destructive">ERR</span>;
                 else if (indicadoresComparado) {
                   const match = indicadoresComparado.find(c => c.id === cat.id);
                   mediaComparado = match && match.estado.media != null ? formatCurrency(match.estado.media) : '—';
+                  // Compute delta if both medias available
+                  if (match && match.estado.media != null && cat.estado.media != null) {
+                    const base = cat.estado.media;
+                    const comp = match.estado.media;
+                    if (base > 0) {
+                      const delta = ((comp - base) / base) * 100;
+                      const rounded = delta.toFixed(1);
+                      const positive = delta > 0;
+                      const zero = Math.abs(delta) < 0.05; // treat as ~0
+                      variacaoNode = (
+                        <span className={
+                          zero
+                            ? 'text-muted-foreground'
+                            : positive
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-red-600 dark:text-red-400'
+                        }>
+                          {zero ? '0%' : `${positive ? '+' : ''}${rounded}%`}
+                        </span>
+                      );
+                    } else if (base === 0 && comp > 0) {
+                      variacaoNode = <span className="text-emerald-600">+∞%</span>;
+                    } else if (base === 0 && comp === 0) {
+                      variacaoNode = <span className="text-muted-foreground">0%</span>;
+                    }
+                  } else {
+                    variacaoNode = <span className="text-muted-foreground">—</span>;
+                  }
                 } else mediaComparado = '—';
               }
               return (
@@ -209,7 +241,10 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
                   <TableCell className="text-center">{nacionalIndice}</TableCell>
                   <TableCell className="text-center">{mediaEstado}</TableCell>
                   {compararEstado && (
-                    <TableCell className="text-center">{mediaComparado}</TableCell>
+                    <>
+                      <TableCell className="text-center">{mediaComparado ?? '—'}</TableCell>
+                      <TableCell className="text-center">{variacaoNode ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                    </>
                   )}
                 </TableRow>
               );
