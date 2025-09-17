@@ -17,8 +17,9 @@ const CATEGORIAS: Array<{ id: string; label: string; descricao: string; table: s
   { id: 'aluguel', label: 'Aluguél', descricao: 'Custos e índice de aluguél', table: 'CustoAluguel' },
 ];
 
-export async function GET(_req: NextRequest, { params }: { params: { uf: string } }) {
-  const ufParam = params.uf?.toUpperCase();
+export async function GET(_req: NextRequest, context: { params: { uf: string } | Promise<{ uf: string }> }) {
+  const resolved = await context.params;
+  const ufParam = resolved.uf?.toUpperCase();
   if (!ufParam || !/^[A-Z]{2}$/.test(ufParam)) {
     return NextResponse.json({ error: 'UF inválida' }, { status: 400 });
   }
