@@ -4,9 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import LoadingOverlay from "@/components/ui/loading-overlay";
-import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export default function Home() {
   const router = useRouter();
@@ -15,12 +25,81 @@ export default function Home() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Cleanup timeout on unmount to avoid navigation after component disposal
   useEffect(() => {
     return () => {
       if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     };
   }, []);
+
+  const loginEmailRef = useRef<HTMLInputElement | null>(null);
+  const loginPasswordRef = useRef<HTMLInputElement | null>(null);
+  const regEmailRef = useRef<HTMLInputElement | null>(null);
+  const regPasswordRef = useRef<HTMLInputElement | null>(null);
+  const regPasswordConfirmRef = useRef<HTMLInputElement | null>(null);
+
+  async function doLogin() {
+    if (isAuthenticating) return;
+    const email = loginEmailRef.current?.value || "";
+    const password = loginPasswordRef.current?.value || "";
+    if (!email || !password) {
+      toast.error("Preencha email e senha");
+      return;
+    }
+    try {
+      setIsAuthenticating(true);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Falha no login");
+      }
+      toast.success("Bem-vindo!");
+      router.push("/pesquisa");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao autenticar");
+      setIsAuthenticating(false);
+    }
+  }
+
+  async function doRegister() {
+    const email = regEmailRef.current?.value || "";
+    const password = regPasswordRef.current?.value || "";
+    const confirm = regPasswordConfirmRef.current?.value || "";
+    if (!email || !password || !confirm) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Senha deve ter ao menos 8 caracteres");
+      return;
+    }
+    try {
+      setIsAuthenticating(true);
+      setRegisterOpen(false);
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Falha no registro");
+      }
+      toast.success("Conta criada!");
+      router.push("/pesquisa");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao registrar");
+      setIsAuthenticating(false);
+    }
+  }
+
   return (
     <div
       className="relative min-h-screen w-full bg-contain bg-bottom md:bg-cover md:bg-center bg-no-repeat"
@@ -41,25 +120,50 @@ export default function Home() {
             <div className="flex-4">
               <div className="flex items-center flex-row gap-4 mt-2">
                 <span>Já possuí uma conta?</span>
-                <Drawer direction="bottom" open={loginOpen} onOpenChange={(o) => { console.log('drawer open change:', o); setLoginOpen(o); }}>
+                <Drawer
+                  direction="bottom"
+                  open={loginOpen}
+                  onOpenChange={(o) => {
+                    setLoginOpen(o);
+                  }}
+                >
                   <DrawerTrigger asChild>
-                    <Button data-test-id="login-button" className="bg-blue-600 text-white hover:bg-blue-700">
+                    <Button
+                      data-test-id="login-button"
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
                       Entrar
                     </Button>
                   </DrawerTrigger>
                   <DrawerContent className="p-0 md:max-w-md w-full mx-auto rounded-t-xl md:rounded-lg">
                     <DrawerHeader>
                       <DrawerTitle>Entrar</DrawerTitle>
-                      <DrawerDescription>Use suas credenciais para acessar</DrawerDescription>
+                      <DrawerDescription>
+                        Use suas credenciais para acessar
+                      </DrawerDescription>
                     </DrawerHeader>
                     <div className="px-4 pb-4 space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="voce@exemplo.com" required autoComplete="email" />
+                        <Input
+                          id="email"
+                          ref={loginEmailRef}
+                          type="email"
+                          placeholder="voce@exemplo.com"
+                          required
+                          autoComplete="email"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="password">Senha</Label>
-                        <Input id="password" type="password" placeholder="••••••••" required autoComplete="current-password" />
+                        <Input
+                          id="password"
+                          ref={loginPasswordRef}
+                          type="password"
+                          placeholder="••••••••"
+                          required
+                          autoComplete="current-password"
+                        />
                       </div>
                     </div>
                     <DrawerFooter>
@@ -69,19 +173,16 @@ export default function Home() {
                         className="w-full"
                         disabled={isAuthenticating}
                         onClick={() => {
-                          if (isAuthenticating) return; // guard multiple clicks
-                          setIsAuthenticating(true);
-                          setLoginOpen(false); // dismiss drawer immediately
-                          // Debounce / simulate auth delay (1000ms)
-                          authTimeoutRef.current = setTimeout(() => {
-                            router.push('/pesquisa');
-                          }, 2000);
+                          setLoginOpen(false);
+                          doLogin();
                         }}
                       >
-                        {isAuthenticating ? 'Autenticando...' : 'Entrar'}
+                        {isAuthenticating ? "Autenticando..." : "Entrar"}
                       </Button>
                       <DrawerClose asChild>
-                        <Button variant="ghost" className="w-full">Cancelar</Button>
+                        <Button variant="ghost" className="w-full">
+                          Cancelar
+                        </Button>
                       </DrawerClose>
                     </DrawerFooter>
                   </DrawerContent>
@@ -90,35 +191,78 @@ export default function Home() {
               <hr className="my-4 border-t border-gray-300" />
               <div className="flex items-center flex-row gap-4 mt-2">
                 <span>Caso contrário</span>
-                <Drawer direction="bottom" open={registerOpen} onOpenChange={(o) => { console.log('register drawer open change:', o); setRegisterOpen(o); }}>
+                <Drawer
+                  direction="bottom"
+                  open={registerOpen}
+                  onOpenChange={(o) => {
+                    setRegisterOpen(o);
+                  }}
+                >
                   <DrawerTrigger asChild>
-                    <Button data-test-id="register-button" className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 transition-colors">
+                    <Button
+                      data-test-id="register-button"
+                      className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 transition-colors"
+                    >
                       Registre-se
                     </Button>
                   </DrawerTrigger>
                   <DrawerContent className="p-0 md:max-w-md w-full mx-auto rounded-t-xl md:rounded-lg">
                     <DrawerHeader>
                       <DrawerTitle>Criar conta</DrawerTitle>
-                      <DrawerDescription>Informe seus dados para registrar</DrawerDescription>
+                      <DrawerDescription>
+                        Informe seus dados para registrar
+                      </DrawerDescription>
                     </DrawerHeader>
                     <div className="px-4 pb-4 space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="reg-email">Email</Label>
-                        <Input id="reg-email" type="email" placeholder="voce@exemplo.com" required autoComplete="email" />
+                        <Input
+                          id="reg-email"
+                          ref={regEmailRef}
+                          type="email"
+                          placeholder="voce@exemplo.com"
+                          required
+                          autoComplete="email"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="reg-password">Senha</Label>
-                        <Input id="reg-password" type="password" placeholder="••••••••" required autoComplete="new-password" />
+                        <Input
+                          id="reg-password"
+                          ref={regPasswordRef}
+                          type="password"
+                          placeholder="••••••••"
+                          required
+                          autoComplete="new-password"
+                        />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="reg-password-confirm">Confirmar senha</Label>
-                        <Input id="reg-password-confirm" type="password" placeholder="••••••••" required autoComplete="new-password" />
+                        <Label htmlFor="reg-password-confirm">
+                          Confirmar senha
+                        </Label>
+                        <Input
+                          id="reg-password-confirm"
+                          ref={regPasswordConfirmRef}
+                          type="password"
+                          placeholder="••••••••"
+                          required
+                          autoComplete="new-password"
+                        />
                       </div>
                     </div>
                     <DrawerFooter>
-                      <Button type="submit" className="w-full">Registrar</Button>
+                      <Button
+                        type="button"
+                        onClick={() => doRegister()}
+                        className="w-full"
+                        disabled={isAuthenticating}
+                      >
+                        {isAuthenticating ? "Registrando..." : "Registrar"}
+                      </Button>
                       <DrawerClose asChild>
-                        <Button variant="ghost" className="w-full">Cancelar</Button>
+                        <Button variant="ghost" className="w-full">
+                          Cancelar
+                        </Button>
                       </DrawerClose>
                     </DrawerFooter>
                   </DrawerContent>
