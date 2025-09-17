@@ -24,6 +24,10 @@ export default function FavoritosPage() {
       <main className="flex-1 px-8 py-10 max-w-5xl w-full mx-auto space-y-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
+            <Button variant="ghost" className="mb-2 flex items-center gap-2" onClick={() => router.back()} data-test-id="favoritos-back-button">
+              <span className="material-symbols-outlined text-base">←</span>
+              Voltar
+            </Button>
             <h1 className="text-3xl font-semibold tracking-tight">Meus Favoritos</h1>
             <p className="text-muted-foreground mt-2 text-sm max-w-prose">
               Estados que você marcou para acompanhar. Você pode adicionar mais na página de detalhes.

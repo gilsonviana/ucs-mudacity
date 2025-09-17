@@ -8,97 +8,92 @@ export interface FavoritoEstado {
   addedAt: string; // ISO timestamp
 }
 
-const STORAGE_KEY = "mudacity:favoritos:v1";
-
-function readStorage(): FavoritoEstado[] {
-  if (typeof window === "undefined") return [];
+async function fetchFavoritos(): Promise<FavoritoEstado[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as FavoritoEstado[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((f) => typeof f.uf === "string" && typeof f.nome === "string");
+    const res = await fetch('/api/favoritos', { method: 'GET' });
+    if (!res.ok) return [];
+    const j = await res.json();
+    if (!Array.isArray(j.items)) return [];
+    return j.items.map((it: any) => ({
+      uf: it.uf,
+      nome: it.nome,
+      addedAt: it.created_at || new Date().toISOString(),
+    }));
   } catch {
     return [];
-  }
-}
-
-function writeStorage(favoritos: FavoritoEstado[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(favoritos));
-  } catch {
-    // ignore quota errors
   }
 }
 
 export async function addFavorito(uf: string): Promise<{ ok: boolean; error?: string }> {
   const estado = ESTADOS.find((e) => e.uf === uf);
   if (!estado) return { ok: false, error: 'Estado não encontrado' };
-  const current = readStorage();
-  if (current.some((c) => c.uf === uf)) return { ok: true }; // already exists locally
-  // Optimistic local add
-  const entry: FavoritoEstado = { uf, nome: estado.nome, addedAt: new Date().toISOString() };
-  writeStorage([...current, entry]);
   try {
     const res = await fetch('/api/favoritos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ uf: uf.toUpperCase(), nome: estado.nome })
     });
-    if (!res.ok) {
-      // Rollback local insert if server rejected (except conflict 409 where server already has it)
-      if (res.status !== 409) {
-        writeStorage(current); // rollback
-      }
+    if (!res.ok && res.status !== 409) {
       let msg = 'Falha ao salvar no servidor';
       try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
-      return { ok: res.status === 409, error: msg };
+      return { ok: false, error: msg };
     }
     return { ok: true };
   } catch (e: any) {
-    // Network failure – keep optimistic local copy
     return { ok: false, error: e?.message || 'Erro de rede' };
   }
 }
 
-export function removeFavorito(uf: string) {
-  const next = readStorage().filter((f) => f.uf !== uf);
-  writeStorage(next);
+export async function removeFavorito(uf: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/favoritos/${encodeURIComponent(uf)}`, { method: 'DELETE' });
+    if (!res.ok) return { ok: false, error: 'Erro ao remover' };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message || 'Erro de rede' };
+  }
 }
 
-export function clearFavoritos() {
-  writeStorage([]);
-}
-
-export function getFavoritos(): FavoritoEstado[] {
-  return readStorage().sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+export async function clearFavoritos(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/favoritos', { method: 'DELETE' });
+    if (!res.ok) return { ok: false, error: 'Erro ao limpar' };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message || 'Erro de rede' };
+  }
 }
 
 export function useFavoritos() {
   const [favoritos, setFavoritos] = useState<FavoritoEstado[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  useEffect(() => {
-    setFavoritos(getFavoritos());
+  const load = useCallback(async () => {
+    setLoading(true);
+    const items = await fetchFavoritos();
+    setFavoritos(items.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
+    setLoading(false);
   }, []);
 
-  const sync = useCallback(() => {
-    setFavoritos(getFavoritos());
-  }, []);
+  useEffect(() => { load(); }, [load]);
 
   const add = useCallback(async (uf: string) => {
-    await addFavorito(uf);
-    sync();
-  }, [sync]);
+    const result = await addFavorito(uf);
+    await load();
+    return result;
+  }, [load]);
 
-  const remove = useCallback((uf: string) => {
-    removeFavorito(uf);
-    sync();
-  }, [sync]);
+  const remove = useCallback(async (uf: string) => {
+    const result = await removeFavorito(uf);
+    await load();
+    return result;
+  }, [load]);
 
-  const clear = useCallback(() => {
-    clearFavoritos();
-    sync();
-  }, [sync]);
+  const clear = useCallback(async () => {
+    const result = await clearFavoritos();
+    await load();
+    return result;
+  }, [load]);
 
-  return { favoritos, add, remove, clear, refresh: sync };
+  return { favoritos, loading, add, remove, clear, refresh: load };
 }

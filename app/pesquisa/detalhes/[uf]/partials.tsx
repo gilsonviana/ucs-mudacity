@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import CompararEstados from "@/components/comparar-estados";
 import { ESTADOS } from "@/lib/estados";
 import { MOCK_INDICADORES_CONFIG } from "@/lib/mock-indicadores";
-import { addFavorito } from "@/lib/favoritos";
+import { useFavoritos } from "@/lib/favoritos";
 import { toast } from "sonner";
 
 export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
@@ -46,6 +46,9 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
     });
   }, [categorias, estado.uf, compararEstado]);
 
+  const { favoritos, add, remove, loading: favLoading } = useFavoritos();
+  const isFavorito = favoritos.some(f => f.uf === estado.uf);
+
   return (
     <main className="flex-1 px-8 py-12 space-y-10">
       <header className="space-y-4">
@@ -57,14 +60,27 @@ export default function DetalhesContent({ estadoUF }: { estadoUF: string }) {
             <div className="order-1 md:order-2 mb-2 md:mb-0">
               <Button
                 data-test-id="adicionar-favorito-button"
-                onClick={() => {
-                  addFavorito(estado.uf);
-                  toast.success(`${estado.nome} adicionado aos favoritos`, {
-                    description: "Você poderá gerenciar seus favoritos em breve.",
-                  });
+                variant={isFavorito ? 'outline' : 'default'}
+                disabled={favLoading}
+                onClick={async () => {
+                  if (isFavorito) {
+                    const result = await remove(estado.uf);
+                    if (result.ok) {
+                      toast.success(`${estado.nome} removido dos favoritos`);
+                    } else {
+                      toast.error(result.error || 'Falha ao remover favorito');
+                    }
+                  } else {
+                    const result = await add(estado.uf);
+                    if (result.ok) {
+                      toast.success(`${estado.nome} adicionado aos favoritos`);
+                    } else {
+                      toast.error(result.error || 'Falha ao adicionar favorito');
+                    }
+                  }
                 }}
               >
-                Adicionar favorito
+                {isFavorito ? 'Remover favorito' : 'Adicionar favorito'}
               </Button>
             </div>
           )}

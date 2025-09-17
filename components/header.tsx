@@ -23,7 +23,7 @@ export function Header() {
   }
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
-      <div className="text-xl font-bold tracking-tight">Mudacity.</div>
+      <Link href="/" className="text-xl font-bold tracking-tight">Mudacity.</Link>
       <nav className="flex items-center gap-8 text-sm font-medium">
         <Link href="/favoritos" className="hover:underline" data-test-id="header-favoritos-link">
           Meus Favoritos
