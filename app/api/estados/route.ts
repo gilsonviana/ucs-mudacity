@@ -17,9 +17,15 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     query: q,
     total: results.length,
     items: results.slice(0, limit),
   });
+  // Cache public estados list for 24h since it is static data
+  res.headers.set(
+    'Cache-Control',
+    'public, max-age=0, s-maxage=86400, stale-while-revalidate=3600'
+  );
+  return res;
 }

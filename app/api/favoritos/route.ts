@@ -14,7 +14,10 @@ export async function GET(req: NextRequest) {
     .eq('user_id', session.uid)
     .order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: 'Erro ao buscar favoritos' }, { status: 500 });
-  return NextResponse.json({ items: data });
+  const res = NextResponse.json({ items: data });
+  // User-specific data: mark private; allow revalidation after 24h but encourage client re-fetch after mutations
+  res.headers.set('Cache-Control', 'private, max-age=60, s-maxage=0');
+  return res;
 }
 
 export async function POST(req: NextRequest) {
@@ -41,7 +44,10 @@ export async function POST(req: NextRequest) {
     .select('uf,nome,created_at')
     .single();
   if (insertError) return NextResponse.json({ error: 'Erro ao inserir' }, { status: 500 });
-  return NextResponse.json({ item: data }, { status: 201 });
+  // Do not cache mutations
+  const res = NextResponse.json({ item: data }, { status: 201 });
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
 }
 
 export async function DELETE(req: NextRequest) {
@@ -50,5 +56,7 @@ export async function DELETE(req: NextRequest) {
   const client = getAdminClient();
   const { error } = await client.from('Favoritos').delete().eq('user_id', session.uid);
   if (error) return NextResponse.json({ error: 'Erro ao remover' }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
 }

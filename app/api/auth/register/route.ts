@@ -69,7 +69,8 @@ export async function POST(req: NextRequest) {
       uid: inserted.id,
       email: inserted.email,
     });
-    const res = NextResponse.json({ id: inserted.id, email: inserted.email });
+  const res = NextResponse.json({ id: inserted.id, email: inserted.email });
+  res.headers.set('Cache-Control', 'no-store');
     res.headers.append("Set-Cookie", buildSessionCookie(sessionToken));
     return res;
   } catch (e) {

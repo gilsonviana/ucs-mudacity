@@ -63,7 +63,7 @@ export async function GET(_req: NextRequest, { params }: { params: { uf: string 
     });
   }
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     fonte: 'Mudacity DataLab',
     moeda: 'BRL',
     updatedAt: new Date().toISOString(),
@@ -74,4 +74,7 @@ export async function GET(_req: NextRequest, { params }: { params: { uf: string 
       caption: '* Valores mensais estimados (dados reais simulados a partir do banco).',
     },
   });
+  // Cache indicadores per UF for 24h at the edge/CDN; allow background revalidation
+  res.headers.set('Cache-Control', 'public, max-age=0, s-maxage=86400, stale-while-revalidate=3600');
+  return res;
 }

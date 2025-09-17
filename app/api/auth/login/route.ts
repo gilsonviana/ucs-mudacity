@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
     }
 
   const token = await createSession({ uid: user.id, email: user.email });
-    const res = NextResponse.json({ id: user.id, email: user.email });
+  const res = NextResponse.json({ id: user.id, email: user.email });
+  res.headers.set('Cache-Control', 'no-store');
     res.headers.append("Set-Cookie", buildSessionCookie(token));
     return res;
   } catch (e) {
